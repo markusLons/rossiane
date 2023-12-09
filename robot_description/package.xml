@@ -4,9 +4,9 @@
   <name>robot_description</name>
   <version>0.0.1</version>
   <description>URDF description files for the robot project</description>
-  <maintainer email="v.kudinov@g.nsu.ru">V. Kudinov</maintainer>
+  <maintainer email="v.leshin@g.nsu.ru">V. Leshin</maintainer>
   <license>Apache 2.0</license>
-  <author>V. Kudinov</author>
+  <author>V. Leshin</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
