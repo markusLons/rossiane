@@ -29,14 +29,14 @@ A ROS2 metapackage that has necessary packages for AutoRace 2023 challenge.
     ros2 run referee_console mission_autorace_2023_referee
     ```
 
-4. Изменение конфигураций камеры
+4. Изменение конфигураций камеры и параметров для детектирования линий трассы
 
     ```bash
     ros2 run rqt_reconfigure rqt_reconfigure
     ```
 
-5. Запуск нашего пакета (пока отдельно)
+5. Запуск нашего launch файла
 
     ```bash
-    ros2 run autorace_core_rossiane path_tracking
+    ros2 launch autorace_core_rossiane detect_lane.launch.py
     ```
