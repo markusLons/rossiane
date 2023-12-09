@@ -20,13 +20,41 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
 
-class PublisherSubscriber(Node):
+class DetectLane(Node):
 
 	def __init__(self):
-		super().__init__('robot_app')
+		super().__init__('autorace_core_rossiane')
+		self.declare_parameters(
+            namespace='',
+            parameters=[
+            ('white/hue_l', 0),
+            ('white/hue_h', 179),
+            ('white/saturation_l', 0),
+            ('white/saturation_h', 70),
+            ('white/lightness_l', 105),
+			('white/lightness_h', 255),
+			('yellow/hue_l', 10),
+			('yellow/hue_h', 127),
+			('yellow/saturation_l', 70),
+			('yellow/saturation_h', 255),
+			('yellow/lightness_l', 95),
+			('yellow/lightness_h', 255),
+        ])
+		self.hue_white_l = self.get_parameter("white/hue_l").get_parameter_value().integer_value
+		self.hue_white_h = self.get_parameter("white/hue_h").get_parameter_value().integer_value
+		self.saturation_white_l = self.get_parameter("white/saturation_l").get_parameter_value().integer_value
+		self.saturation_white_h = self.get_parameter("white/saturation_h").get_parameter_value().integer_value
+		self.lightness_white_l = self.get_parameter("white/lightness_l").get_parameter_value().integer_value
+		self.lightness_white_h = self.get_parameter("white/lightness_h").get_parameter_value().integer_value
+		self.hue_yellow_l = self.get_parameter("yellow/hue_l").get_parameter_value().integer_value
+		self.hue_yellow_h = self.get_parameter("yellow/hue_h").get_parameter_value().integer_value
+		self.saturation_yellow_l = self.get_parameter("yellow/saturation_l").get_parameter_value().integer_value
+		self.saturation_yellow_h = self.get_parameter("yellow/saturation_h").get_parameter_value().integer_value
+		self.lightness_yellow_l = self.get_parameter("yellow/lightness_l").get_parameter_value().integer_value
+		self.lightness_yellow_h = self.get_parameter("yellow/lightness_h").get_parameter_value().integer_value
+
 		self.publisher_ = self.create_publisher(Twist, '/robot/cmd_vel', 10)
 		self.subscription = self.create_subscription(Image, '/color/image_projected_compensated', self.callback, 10)
-		self.previousData = []
 		self.br = CvBridge()
 		self.subscription # prevent unused variable warn
 		   
@@ -37,10 +65,11 @@ class PublisherSubscriber(Node):
 		cv2.waitKey(1)
 		velMsg = Twist()
 		self.publisher_.publish(velMsg)
+		
 
 def main(args=None):
     rclpy.init(args=args)
-    robot_app = PublisherSubscriber()
+    robot_app = DetectLane()
     rclpy.spin(robot_app)
 	
     robot_app.destroy_node()
