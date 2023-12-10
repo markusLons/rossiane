@@ -12,6 +12,13 @@ def generate_launch_description():
       'calibration',
       'calibration.yaml'
       )
+   
+   pid_config = os.path.join(
+      get_package_share_directory('autorace_core_rossiane'),
+      'calibration',
+      'pid_config.yaml'
+      )
+
 
    return LaunchDescription([
       Node(
@@ -20,5 +27,12 @@ def generate_launch_description():
          namespace='detect',
          name='lane',
          parameters=[config]
+      ),
+      Node(
+         package='autorace_core_rossiane',
+         executable='pid_controller',
+         namespace='drive',
+         name='pid',
+         parameters=[pid_config]
       )
    ])

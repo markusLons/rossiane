@@ -27,7 +27,8 @@ setup(
     entry_points={
         'console_scripts': [
             'path_tracking=autorace_core_rossiane.path_tracking:main',
-            'take_picture=autorace_core_rossiane.take_picture:main'
+            'take_picture=autorace_core_rossiane.take_picture:main',
+            'pid_controller=autorace_core_rossiane.pid_controller:main'
         ],
     },
 )
