@@ -26,7 +26,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'path_tracking=autorace_core_rossiane.path_tracking:main'
+            'path_tracking=autorace_core_rossiane.path_tracking:main',
+            'take_picture=autorace_core_rossiane.take_picture:main'
         ],
     },
 )

@@ -18,7 +18,6 @@
 ################################################################################
 
 # Authors: Leon Jung, Gilbert, Ashe Kim, Special Thanks : Roger Sacchelli
-
 import rospy
 import numpy as np
 import cv2
@@ -91,36 +90,7 @@ class DetectLane():
         self.reliability_white_line = 100
         self.reliability_yellow_line = 100
 
-    def cbGetDetectLaneParam(self, config, level):
-        rospy.loginfo("[Detect Lane] Detect Lane Calibration Parameter reconfigured to")
-        rospy.loginfo("hue_white_l : %d", config.hue_white_l)
-        rospy.loginfo("hue_white_h : %d", config.hue_white_h)
-        rospy.loginfo("saturation_white_l : %d", config.saturation_white_l)
-        rospy.loginfo("saturation_white_h : %d", config.saturation_white_h)
-        rospy.loginfo("lightness_white_l : %d", config.lightness_white_l)
-        rospy.loginfo("lightness_white_h : %d", config.lightness_white_h)
-        rospy.loginfo("hue_yellow_l : %d", config.hue_yellow_l)
-        rospy.loginfo("hue_yellow_h : %d", config.hue_yellow_h)
-        rospy.loginfo("saturation_yellow_l : %d", config.saturation_yellow_l)
-        rospy.loginfo("saturation_yellow_h : %d", config.saturation_yellow_h)
-        rospy.loginfo("lightness_yellow_l : %d", config.lightness_yellow_l)
-        rospy.loginfo("lightness_yellow_h : %d", config.lightness_yellow_h)
 
-        self.hue_white_l = config.hue_white_l
-        self.hue_white_h = config.hue_white_h
-        self.saturation_white_l = config.saturation_white_l
-        self.saturation_white_h = config.saturation_white_h
-        self.lightness_white_l = config.lightness_white_l
-        self.lightness_white_h = config.lightness_white_h
-
-        self.hue_yellow_l = config.hue_yellow_l
-        self.hue_yellow_h = config.hue_yellow_h
-        self.saturation_yellow_l = config.saturation_yellow_l
-        self.saturation_yellow_h = config.saturation_yellow_h
-        self.lightness_yellow_l = config.lightness_yellow_l
-        self.lightness_yellow_h = config.lightness_yellow_h
-
-        return config
 
     def cbFindLane(self, image_msg):
         # Change the frame rate by yourself. Now, it is set to 1/3 (10fps). 
