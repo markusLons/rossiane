@@ -10,7 +10,8 @@ A ROS2 metapackage that has necessary packages for AutoRace 2023 challenge.
 * `robot_bringup` - holds launch files, worlds and multiple configurations that serve as an example and as a required system for AutoRace to work.
 
 ## Usage
-
+### Чтобы все работало лучше всего запускать порядку шаги 1, 2, 3, 5
+### Шаг 4 нужен, если вы хотите что-то поменять в конфигурации
 1. Запуск мира
 
     ```bash
