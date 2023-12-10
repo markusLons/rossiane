@@ -18,6 +18,7 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from cv_bridge import CvBridge
+from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
 
@@ -48,7 +49,7 @@ class Controller(Node):
 
 
 		self.publisher_ = self.create_publisher(Twist, '/robot/cmd_vel', 10)
-		self.subscription = self.create_subscription(Image, '/depth/image', self.callback, 10)
+		self.subscription = self.create_subscription(Float64, '/detect/lane', self.callback, 10)
 		self.br = CvBridge()
 		self.subscription # prevent unused variable warn
 
@@ -60,6 +61,7 @@ class Controller(Node):
 		   
 	def callback(self, msg):
 		dsensorImage = msg
+		self.get_logger().info('Center is: %lf' % msg.data)
 		# current_frame = self.br.imgmsg_to_cv2(dsensorImage, "32FC1")
 		# cv2.imshow('camera', current_frame[100:280, 200:650])
 		# cv2.waitKey(1)

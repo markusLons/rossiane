@@ -41,6 +41,26 @@ class DetectLane(Node):
 			('yellow/lightness_l', 95),
 			('yellow/lightness_h', 255),
         ])
+
+		self.publisher_ = self.create_publisher(Float64, '/detect/lane', 10)
+		self.subscription = self.create_subscription(Image, '/color/image_projected_compensated', self.cbFindLane, 1)
+		self.br = CvBridge()
+		self.is_calibration_mode = True # rospy.get_param("~is_detection_calibration_mode", False)                !!!
+		self.counter = 1
+
+		self.reliability_white_line = 100
+		self.reliability_yellow_line = 100
+		self.subscription # prevent unused variable warn
+        
+	def cbFindLane(self, image_msg):
+        # Change the frame rate by yourself. Now, it is set to 1/3 (10fps). 
+        # Unappropriate value of frame rate may cause huge delay on entire recognition process.
+        # This is up to your computer's operating power.
+		# if self.counter % 3 != 0:
+		# 	self.counter += 1
+		# 	return
+		# else:
+		# 	self.counter = 1
 		self.hue_white_l = self.get_parameter("white/hue_l").get_parameter_value().integer_value
 		self.hue_white_h = self.get_parameter("white/hue_h").get_parameter_value().integer_value
 		self.saturation_white_l = self.get_parameter("white/saturation_l").get_parameter_value().integer_value
@@ -53,35 +73,6 @@ class DetectLane(Node):
 		self.saturation_yellow_h = self.get_parameter("yellow/saturation_h").get_parameter_value().integer_value
 		self.lightness_yellow_l = self.get_parameter("yellow/lightness_l").get_parameter_value().integer_value
 		self.lightness_yellow_h = self.get_parameter("yellow/lightness_h").get_parameter_value().integer_value
-
-		self.publisher_ = self.create_publisher(Twist, '/robot/cmd_vel', 10)
-		self.subscription = self.create_subscription(Image, '/color/image_projected_compensated', self.cbFindLane, 1)
-		self.br = CvBridge()
-		self.is_calibration_mode = True # rospy.get_param("~is_detection_calibration_mode", False)                !!!
-		self.counter = 1
-
-		self.reliability_white_line = 100
-		self.reliability_yellow_line = 100
-		self.subscription # prevent unused variable warn
-		   
-	# def callback(self, msg):
-	# 	dsensorImage = msg
-	# 	current_frame = self.br.imgmsg_to_cv2(dsensorImage, "bgr8")
-	# 	cv2.imshow('camera', current_frame)
-	# 	cv2.waitKey(1)
-	# 	velMsg = Twist()
-	# 	self.publisher_.publish(velMsg)
-        
-	def cbFindLane(self, image_msg):
-        # Change the frame rate by yourself. Now, it is set to 1/3 (10fps). 
-        # Unappropriate value of frame rate may cause huge delay on entire recognition process.
-        # This is up to your computer's operating power.
-		# if self.counter % 3 != 0:
-		# 	self.counter += 1
-		# 	return
-		# else:
-		# 	self.counter = 1
-
 		
 		cv_image = self.br.imgmsg_to_cv2(image_msg, "bgr8")
 		self.window_width = cv_image.shape[1]
@@ -141,10 +132,9 @@ class DetectLane(Node):
 
 		# Threshold the HSV image to get only white colors
 		mask = cv2.inRange(hsv, lower_white, upper_white)
-
 		# Bitwise-AND mask and original image
 		res = cv2.bitwise_and(image, image, mask = mask)
-
+		
 		fraction_num = np.count_nonzero(mask)
 
 		if self.is_calibration_mode == False:
@@ -350,21 +340,21 @@ class DetectLane(Node):
 
 		if yellow_fraction > 3000:
 			pts_left = np.array([np.flipud(np.transpose(np.vstack([self.left_fitx, ploty])))])
-			cv2.polylines(color_warp_lines, np.int_([pts_left]), isClosed=False, color=(0, 0, 255), thickness=25)
+			cv2.polylines(color_warp_lines, np.int_([pts_left]), isClosed=False, color=(0, 0, 255), thickness=35)
 
 		if white_fraction > 3000:
 			pts_right = np.array([np.transpose(np.vstack([self.right_fitx, ploty]))])
-			cv2.polylines(color_warp_lines, np.int_([pts_right]), isClosed=False, color=(255, 255, 0), thickness=25)
+			cv2.polylines(color_warp_lines, np.int_([pts_right]), isClosed=False, color=(255, 255, 0), thickness=35)
 
 		self.is_center_x_exist = True
-
-		if self.reliability_white_line > 50 and self.reliability_yellow_line > 50:   
+		thrshld = 5
+		if self.reliability_white_line > thrshld and self.reliability_yellow_line > thrshld:   
 			if white_fraction > 3000 and yellow_fraction > 3000:
 				centerx = np.mean([self.left_fitx, self.right_fitx], axis=0)
 				pts = np.hstack((pts_left, pts_right))
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 
-				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=12)
+				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 				# Draw the lane onto the warped blank image
 				cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
@@ -373,25 +363,25 @@ class DetectLane(Node):
 				centerx = np.subtract(self.right_fitx, 320)
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 
-				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=12)
+				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 			if white_fraction <= 3000 and yellow_fraction > 3000:
 				centerx = np.add(self.left_fitx, 320)
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 
-				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=12)
+				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		elif self.reliability_white_line <= 50 and self.reliability_yellow_line > 50:
+		elif self.reliability_white_line <= thrshld and self.reliability_yellow_line > thrshld:
 			centerx = np.add(self.left_fitx, 320)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 
-			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=12)
+			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		elif self.reliability_white_line > 50 and self.reliability_yellow_line <= 50:
+		elif self.reliability_white_line > thrshld and self.reliability_yellow_line <= thrshld:
 			centerx = np.subtract(self.right_fitx, 320)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 
-			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=12)
+			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 		else:
 			self.is_center_x_exist = False
@@ -402,12 +392,15 @@ class DetectLane(Node):
 		final = cv2.addWeighted(final, 1, color_warp_lines, 1, 0)
 		cv2.imshow('camera', final)
 		cv2.waitKey(1)
-
+		try:
+			self.get_logger().info('Center is: %d' % centerx.item(350))
+		except:
+			self.get_logger().info('Center is: %d' % 350)
 		if self.is_center_x_exist == True:
 			# publishes lane center
 			msg_desired_center = Float64()
 			msg_desired_center.data = centerx.item(350)
-			#self.pub_lane.publish(msg_desired_center)                                               !!!
+			self.publisher_.publish(msg_desired_center)
 
 		#self.pub_image_lane.publish(self.cvBridge.cv2_to_imgmsg(final, "bgr8"))                     !!!
 		

@@ -3,8 +3,8 @@
     white/hue_l: 0
     white/hue_h: 255
     white/saturation_l: 0
-    white/saturation_h: 30
-    white/lightness_l: 240
+    white/saturation_h: 10
+    white/lightness_l: 252
     white/lightness_h: 255
     yellow/hue_l: 10
     yellow/hue_h: 127

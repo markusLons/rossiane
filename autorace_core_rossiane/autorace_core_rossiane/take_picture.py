@@ -32,14 +32,14 @@ class PublisherSubscriber(Node):
 		self.subscription # prevent unused variable warn
 		   
 	def callback(self, msg):
-		if self.i % 3 != 0:
+		if self.i % 10 != 0:
 			self.i += 1
 			return
 		else:
 			self.i = 1
 		dsensorImage = msg
 		current_frame = self.br.imgmsg_to_cv2(dsensorImage, "bgr8")
-		filename = f"dataset/tunnel/tunnel{self.count}.png"
+		filename = f"dataset/empty/empty{self.count}.png"
 		cv2.imwrite(filename, current_frame)
 		self.get_logger().info('Picture: %s' % filename)
 		cv2.waitKey(1)
