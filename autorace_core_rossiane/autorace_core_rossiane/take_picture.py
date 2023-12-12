@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import cv2
 import matplotlib.pyplot as plt
 import rclpy
@@ -20,29 +20,46 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
+from ament_index_python.packages import get_package_share_directory
+from ultralytics import YOLO
 
 class PublisherSubscriber(Node):
 
 	def __init__(self):
 		super().__init__('robot_app')
-		self.subscription = self.create_subscription(Image, '/color/image', self.callback, 10)
+		self.subscription = self.create_subscription(Image, '/color/image', self.callback, 1)
 		self.br = CvBridge()
 		self.count = 1
 		self.i = 1
 		self.subscription # prevent unused variable warn
-		   
+		path = os.path.join(
+			get_package_share_directory('autorace_core_rossiane'),
+			'calibration',
+			'best.pt'
+			)
+		self.model = YOLO(path)
+		self.names = self.model.names
 	def callback(self, msg):
-		if self.i % 10 != 0:
-			self.i += 1
-			return
-		else:
-			self.i = 1
+		# if self.i % 10 != 0:
+		# 	self.i += 1
+		# 	return
+		# else:
+		# 	self.i = 1
 		dsensorImage = msg
 		current_frame = self.br.imgmsg_to_cv2(dsensorImage, "bgr8")
-		filename = f"dataset/empty/empty{self.count}.png"
-		cv2.imwrite(filename, current_frame)
-		self.get_logger().info('Picture: %s' % filename)
-		cv2.waitKey(1)
+		#YOLO
+		if self.i == 1:
+			results = self.model.predict(current_frame, show = True)
+			for c in results[0]:
+				value = c.boxes.cls.item()  # Convert the tensor to a Python float
+				self.get_logger().info(self.names[int(value)])
+
+				
+				box_coordinates = c.boxes.xyxy[0].cpu().numpy()  # Convert the tensor to a NumPy array
+				self.get_logger().info(f"Upper-left coordinates: ({box_coordinates[0]}, {box_coordinates[1]})")
+				self.get_logger().info(f"Lower-right coordinates: ({box_coordinates[2]}, {box_coordinates[3]})")
+		# cv2.imshow('camera', current_frame)
+		# cv2.waitKey(1)
 		self.count += 1
 
 def main(args=None):

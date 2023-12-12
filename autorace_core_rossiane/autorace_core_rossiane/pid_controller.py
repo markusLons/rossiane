@@ -50,9 +50,9 @@ class Controller(Node):
 		self.Kd = self.get_parameter("Kd").get_parameter_value().double_value
 		self.desiredV = self.get_parameter("desiredV").get_parameter_value().double_value
 		
-		e = 370 - msg.data
-		self.get_logger().info('Message data: %lf' % msg.data)
-		self.get_logger().info('Error: %lf' % e)
+		e = (390 - msg.data)/100
+		# self.get_logger().info('Message data: %lf' % msg.data)
+		# self.get_logger().info('Error: %lf' % e)
 		e_P = e
 		e_I = self.E + e
 		e_D = e - self.old_e
@@ -62,14 +62,15 @@ class Controller(Node):
 		# The value of v can be specified by giving in parameter or
 		# using the pre-defined value defined above.
 		w = self.Kp*e_P + self.Ki*e_I + self.Kd*e_D
-		self.get_logger().info('W before: %lf' % w)
+		if w > 5: w = 5
+		if w< -5: w = -5
 		#w = np.arctan2(np.sin(w), np.cos(w))
-		self.get_logger().info('W before: %lf' % w)
+		#self.get_logger().info('W before: %lf' % w)
 		self.E = self.E + e
 		self.old_e = e
 		v = self.desiredV
 		self.twist.linear.x = v
-		self.twist.angular.z = w
+		self.twist.angular.z = float(w)
 		self.publisher_.publish(self.twist)
 
 

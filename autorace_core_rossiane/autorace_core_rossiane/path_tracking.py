@@ -24,7 +24,7 @@ from sensor_msgs.msg import Image
 class DetectLane(Node):
 
 	def __init__(self):
-		super().__init__('autorace_core_rossiane')
+		super().__init__('pid')
 		self.declare_parameters(
             namespace='',
             parameters=[
@@ -188,7 +188,6 @@ class DetectLane(Node):
 
 		# Threshold the HSV image to get only yellow colors
 		mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
-
 		# Bitwise-AND mask and original image
 		res = cv2.bitwise_and(image, image, mask = mask)
 
@@ -257,7 +256,7 @@ class DetectLane(Node):
 
 		# Find the peak of the left and right halves of the histogram
 		# These will be the starting point for the left and right lines
-		midpoint = np.int(histogram.shape[0] / 2)
+		midpoint = int(histogram.shape[0] / 2)
 
 		if left_or_right == 'left':
 			lane_base = np.argmax(histogram[:midpoint])
@@ -268,7 +267,7 @@ class DetectLane(Node):
 		nwindows = 20
 
 		# Set height of windows
-		window_height = np.int(img_w.shape[0] / nwindows)
+		window_height = int(img_w.shape[0] / nwindows)
 
 		# Identify the x and y positions of all nonzero pixels in the image
 		nonzero = img_w.nonzero()
@@ -307,7 +306,7 @@ class DetectLane(Node):
 
 			# If you found > minpix pixels, recenter next window on their mean position
 			if len(good_lane_inds) > minpix:
-				x_current = np.int(np.mean(nonzerox[good_lane_inds]))
+				x_current = int(np.mean(nonzerox[good_lane_inds]))
 
 		# Concatenate the arrays of indices
 		lane_inds = np.concatenate(lane_inds)
@@ -348,61 +347,63 @@ class DetectLane(Node):
 
 		self.is_center_x_exist = True
 		thrshld = 0
-		if self.reliability_white_line > thrshld and self.reliability_yellow_line > thrshld:   
+		if self.reliability_white_line > thrshld and self.reliability_yellow_line > thrshld:  
 			if white_fraction > 3000 and yellow_fraction > 3000:
 				centerx = np.mean([self.left_fitx, self.right_fitx], axis=0)
 				pts = np.hstack((pts_left, pts_right))
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
-
+				self.get_logger().info('Error 1')
 				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 				# Draw the lane onto the warped blank image
 				cv2.fillPoly(color_warp, np.int_([pts]), (0, 255, 0))
 
-			if white_fraction > 3000 and yellow_fraction <= 3000:
+			elif white_fraction > 3000 and yellow_fraction <= 3000:
 				centerx = np.subtract(self.right_fitx, 320)
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
-
+				self.get_logger().info('Error 2')
 				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-			if white_fraction <= 3000 and yellow_fraction > 3000:
+			elif white_fraction <= 3000 and yellow_fraction > 3000:
+				self.get_logger().info('Error 3')
 				centerx = np.add(self.left_fitx, 320)
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
-
+				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
+			else:
+				centerx = np.add(np.zeros_like(self.left_fitx, dtype=float), 390)
+				self.get_logger().info('Error 4')
+				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 		elif self.reliability_white_line <= thrshld and self.reliability_yellow_line > thrshld:
 			centerx = np.add(self.left_fitx, 320)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
-
+			self.get_logger().info('Error 5')
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 		elif self.reliability_white_line > thrshld and self.reliability_yellow_line <= thrshld:
 			centerx = np.subtract(self.right_fitx, 320)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
-
+			self.get_logger().info('Error 6')
+			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
+		else:
+			#self.is_center_x_exist = False
+			centerx = np.add(np.zeros_like(self.left_fitx), 390)
+			self.get_logger().info('Error here: %d' % centerx.item(350))
+			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		else:
-			self.is_center_x_exist = False
-			pass
-
 		# Combine the result with the original image
-		final = cv2.addWeighted(cv_image, 1, color_warp, 0.2, 0)
-		final = cv2.addWeighted(final, 1, color_warp_lines, 1, 0)
+		#final = cv2.addWeighted(cv_image, 1, color_warp, 0.2, 0)
+		final = cv2.addWeighted(cv_image, 1, color_warp_lines, 1, 0)
 		cv2.imshow('camera', final)
 		cv2.waitKey(1)
-		# try:
-		# 	self.get_logger().info('Center is: %d' % centerx.item(350))
-		# except:
-		# 	self.get_logger().info('Center is: %d' % 350)
+		self.get_logger().info('Error ctrl %d' % self.counter)
 		if self.is_center_x_exist == True:
 			# publishes lane center
 			msg_desired_center = Float64()
 			msg_desired_center.data = centerx.item(350)
 			self.publisher_.publish(msg_desired_center)
-
-		#self.pub_image_lane.publish(self.cvBridge.cv2_to_imgmsg(final, "bgr8"))                     !!!
 		
 
 def main(args=None):
