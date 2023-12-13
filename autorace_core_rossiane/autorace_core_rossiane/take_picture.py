@@ -17,8 +17,7 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from std_msgs.msg import Bool
-from geometry_msgs.msg import Twist
+from std_msgs.msg import UInt8
 from sensor_msgs.msg import Image
 from ament_index_python.packages import get_package_share_directory
 from ultralytics import YOLO
@@ -27,11 +26,13 @@ class PublisherSubscriber(Node):
 
 	def __init__(self):
 		super().__init__('robot_app')
-		self.publisher_ = self.create_publisher(Bool, '/start', 1)
+		self.publisher_ = self.create_publisher(UInt8, '/commands', 1)
 		self.subscription = self.create_subscription(Image, '/color/image', self.callback, 1)
 		self.br = CvBridge()
-		self.msg = Bool()
+		self.msg = UInt8()
 		self.start = False
+		self.crossroad = False
+		self.turn_left_or_right = False
 		self.subscription # prevent unused variable warn
 		path = os.path.join(
 			get_package_share_directory('autorace_core_rossiane'),
@@ -41,6 +42,7 @@ class PublisherSubscriber(Node):
 		self.model = YOLO(path)
 		self.names = self.model.names
 
+
 	def callback(self, msg):
 		dsensorImage = msg
 		current_frame = self.br.imgmsg_to_cv2(dsensorImage, "bgr8")
@@ -48,17 +50,26 @@ class PublisherSubscriber(Node):
 		results = self.model.predict(current_frame, show = True)
 		for c in results[0]:
 			value = c.boxes.cls.item()  
+			box_coordinates = c.boxes.xyxy[0].cpu().numpy()
+			width = box_coordinates[2] - box_coordinates[0]
+			height = box_coordinates[3] - box_coordinates[1]
 			self.get_logger().info(self.names[int(value)])
-			if int(value) == 1 and self.start == False:
-				self.msg.data = True
+			if self.start == False and self.names[int(value)] == 'green_light':
+				self.msg.data = 1
 				self.start = True
 				self.publisher_.publish(self.msg)
-			elif int(value) == 0:
-				pass
-			
-			box_coordinates = c.boxes.xyxy[0].cpu().numpy()  
-			self.get_logger().info(f"Upper-left coordinates: ({box_coordinates[0]}, {box_coordinates[1]})")
-			self.get_logger().info(f"Lower-right coordinates: ({box_coordinates[2]}, {box_coordinates[3]})")
+			elif self.crossroad == False and self.names[int(value)] == 'crossroad' and width > 200:
+				self.crossroad = True
+			elif self.turn_left_or_right == False and self.names[int(value)] == 'turn_left' and width > 70:
+				self.msg.data = 2
+				self.turn_left_or_right = True
+				self.publisher_.publish(self.msg)
+			elif self.turn_left_or_right == False and self.names[int(value)] == 'turn_right' and width > 70:
+				self.msg.data = 3
+				self.turn_left_or_right = True
+				self.publisher_.publish(self.msg)
+			# self.get_logger().info(f"Upper-left coordinates: ({box_coordinates[0]}, {box_coordinates[1]})")
+			# self.get_logger().info(f"Lower-right coordinates: ({box_coordinates[2]}, {box_coordinates[3]})")
 
 def main(args=None):
     rclpy.init(args=args)

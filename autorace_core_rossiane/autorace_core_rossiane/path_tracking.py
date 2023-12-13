@@ -17,7 +17,7 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from std_msgs.msg import Float64, Bool, UInt8
+from std_msgs.msg import Float64, Empty, UInt8
 from sensor_msgs.msg import Image
 
 class DetectLane(Node):
@@ -43,19 +43,25 @@ class DetectLane(Node):
 
 		self.publisher_ = self.create_publisher(Float64, '/detect/lane', 10)
 		self.subscription = self.create_subscription(Image, '/color/image_projected_compensated', self.cbFindLane, 1)
-		self.comands = self.create_subscription(Bool, '/start', self.start, 1)
+		self.subscription2 = self.create_subscription(UInt8, '/commands', self.commands, 1)
 		self.br = CvBridge()
 		self.is_calibration_mode = True
-		self.is_center_x_exist = False
+		self.is_green_light = False
+		self.turn_left = False
+		self.turn_right = False
 		self.counter = 1
-
 		self.reliability_white_line = 100
 		self.reliability_yellow_line = 100
 		self.subscription # prevent unused variable warn
-		self.comands
+		self.subscription2
 
-	def start(self, msg):
-		self.is_center_x_exist = msg.data
+	def commands(self, msg):
+		if msg.data == 1:
+			self.is_green_light = True
+		elif msg.data == 2:
+			self.turn_left = True
+		elif msg.data == 3:
+			self.turn_right = True
 
         
 	def cbFindLane(self, image_msg):
@@ -160,12 +166,7 @@ class DetectLane(Node):
 
 		msg_white_line_reliability = UInt8()
 		msg_white_line_reliability.data = self.reliability_white_line
-		#self.pub_white_line_reliability.publish(msg_white_line_reliability)                              !!!
-
-		if self.is_calibration_mode == True:
-			pass			
-			# publishes white lane filtered image in raw type
-			#self.pub_image_white_lane.publish(self.cvBridge.cv2_to_imgmsg(mask, "bgr8"))                 !!!
+		#self.pub_white_line_reliability.publish(msg_white_line_reliability)
 
 		return fraction_num, mask
 	
@@ -217,12 +218,6 @@ class DetectLane(Node):
 		msg_yellow_line_reliability = UInt8()
 		msg_yellow_line_reliability.data = self.reliability_yellow_line
 		#self.pub_yellow_line_reliability.publish(msg_yellow_line_reliability)                       !!!
-
-		if self.is_calibration_mode == True:
-			pass			
-			# publishes yellow lane filtered image in raw type
-			#self.pub_image_yellow_lane.publish(self.cvBridge.cv2_to_imgmsg(mask, "bgr8"))           !!!
-
 		return fraction_num, mask
 	
 	def fit_from_lines(self, lane_fit, image):
@@ -343,8 +338,12 @@ class DetectLane(Node):
 			pts_right = np.array([np.transpose(np.vstack([self.right_fitx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_right]), isClosed=False, color=(255, 255, 0), thickness=35)
 
-		thrshld = 0
-		if self.reliability_white_line > thrshld and self.reliability_yellow_line > thrshld:  
+		if self.counter > 450:
+			self.turn_left = False
+			self.turn_right = False
+			self.counter = 1
+
+		if self.turn_left == False and self.turn_right == False:  
 			if white_fraction > 3000 and yellow_fraction > 3000:
 				centerx = np.mean([self.left_fitx, self.right_fitx], axis=0)
 				pts = np.hstack((pts_left, pts_right))
@@ -368,13 +367,17 @@ class DetectLane(Node):
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		elif self.reliability_white_line <= thrshld and self.reliability_yellow_line > thrshld:
-			centerx = np.add(self.left_fitx, 320)
+		elif self.turn_left == True:
+			self.counter += 1
+			self.get_logger().info("Here turn_left")
+			centerx = np.add(self.left_fitx, 250)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		elif self.reliability_white_line > thrshld and self.reliability_yellow_line <= thrshld:
-			centerx = np.subtract(self.right_fitx, 320)
+		elif self.turn_right == True:
+			self.counter += 1
+			self.get_logger().info("Here turn_right")
+			centerx = np.subtract(self.right_fitx, 200)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 		else:
@@ -387,7 +390,7 @@ class DetectLane(Node):
 		final = cv2.addWeighted(cv_image, 1, color_warp_lines, 1, 0)
 		cv2.imshow('camera', final)
 		cv2.waitKey(1)
-		if self.is_center_x_exist == True:
+		if self.is_green_light == True:
 			# publishes lane center
 			msg_desired_center = Float64()
 			msg_desired_center.data = centerx.item(350)
