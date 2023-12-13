@@ -63,9 +63,9 @@ class Controller(Node):
 		# using the pre-defined value defined above.
 		w = self.Kp*e_P + self.Ki*e_I + self.Kd*e_D
 		if w > 5: w = 5
-		if w< -5: w = -5
+		if w < -5: w = -5
 		#w = np.arctan2(np.sin(w), np.cos(w))
-		#self.get_logger().info('W before: %lf' % w)
+
 		self.E = self.E + e
 		self.old_e = e
 		v = self.desiredV

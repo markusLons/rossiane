@@ -30,6 +30,12 @@ def generate_launch_description():
       ),
       Node(
          package='autorace_core_rossiane',
+         executable='take_picture',
+         namespace='drive',
+         name='yolo'
+      ),
+      Node(
+         package='autorace_core_rossiane',
          executable='pid_controller',
          namespace='drive',
          name='pid',
