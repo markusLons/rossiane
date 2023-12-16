@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import cv2
 import rclpy
 import numpy as np
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from std_msgs.msg import Float64, Empty, UInt8
+from std_msgs.msg import Float64, String, UInt8
 from sensor_msgs.msg import Image
 
 class DetectLane(Node):
@@ -43,25 +44,23 @@ class DetectLane(Node):
 
 		self.publisher_ = self.create_publisher(Float64, '/detect/lane', 10)
 		self.subscription = self.create_subscription(Image, '/color/image_projected_compensated', self.cbFindLane, 1)
-		self.subscription2 = self.create_subscription(UInt8, '/commands', self.commands, 1)
+		self.subscription2 = self.create_subscription(String, '/commands', self.commands, 1)
 		self.br = CvBridge()
 		self.is_calibration_mode = True
-		self.is_green_light = False
-		self.turn_left = False
-		self.turn_right = False
-		self.counter = 1
+		self.flags = {
+			"green_light" : False,
+			"turn_left" : False,
+			"turn_right" : False,
+			"parking" : False,
+		}
+		self.startTime = 0.0
 		self.reliability_white_line = 100
 		self.reliability_yellow_line = 100
 		self.subscription # prevent unused variable warn
 		self.subscription2
 
 	def commands(self, msg):
-		if msg.data == 1:
-			self.is_green_light = True
-		elif msg.data == 2:
-			self.turn_left = True
-		elif msg.data == 3:
-			self.turn_right = True
+		self.flags[msg.data] = True
 
         
 	def cbFindLane(self, image_msg):
@@ -300,7 +299,7 @@ class DetectLane(Node):
 			# If you found > minpix pixels, recenter next window on their mean position
 			if len(good_lane_inds) > minpix:
 				x_current = int(np.mean(nonzerox[good_lane_inds]))
-
+		
 		# Concatenate the arrays of indices
 		lane_inds = np.concatenate(lane_inds)
 
@@ -338,12 +337,24 @@ class DetectLane(Node):
 			pts_right = np.array([np.transpose(np.vstack([self.right_fitx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_right]), isClosed=False, color=(255, 255, 0), thickness=35)
 
-		if self.counter > 450:
-			self.turn_left = False
-			self.turn_right = False
-			self.counter = 1
+		if self.flags["turn_left"] == True or self.flags["turn_right"] == True:
+			if self.startTime == 0.0:
+				self.startTime = time.time()
+			if time.time() - self.startTime > 25.0:
+				self.flags["turn_left"] = False
+				self.flags["turn_right"] = False
+				self.startTime = 0.0
 
-		if self.turn_left == False and self.turn_right == False:  
+		if self.flags["parking"] == True:
+			if self.startTime == 0.0:
+				self.get_logger().info('Start in path_tracking')
+				self.startTime = time.time()
+			if time.time() - self.startTime > 34.0:
+				self.get_logger().info('Finish in path_tracking')
+				self.flags["parking"] = False
+				self.startTime = 0.0
+
+		if self.flags["turn_left"] == False and self.flags["turn_right"] == False and self.flags["parking"] == False:  
 			if white_fraction > 3000 and yellow_fraction > 3000:
 				centerx = np.mean([self.left_fitx, self.right_fitx], axis=0)
 				pts = np.hstack((pts_left, pts_right))
@@ -367,17 +378,13 @@ class DetectLane(Node):
 				pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 				cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		elif self.turn_left == True:
-			self.counter += 1
-			self.get_logger().info("Here turn_left")
-			centerx = np.add(self.left_fitx, 250)
+		elif self.flags["turn_left"] == True or self.flags["parking"] == True:
+			centerx = np.add(self.left_fitx, 260)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
-		elif self.turn_right == True:
-			self.counter += 1
-			self.get_logger().info("Here turn_right")
-			centerx = np.subtract(self.right_fitx, 200)
+		elif self.flags["turn_right"] == True:
+			centerx = np.subtract(self.right_fitx, 250)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 		else:
@@ -390,7 +397,7 @@ class DetectLane(Node):
 		final = cv2.addWeighted(cv_image, 1, color_warp_lines, 1, 0)
 		cv2.imshow('camera', final)
 		cv2.waitKey(1)
-		if self.is_green_light == True:
+		if self.flags["green_light"] == True:
 			# publishes lane center
 			msg_desired_center = Float64()
 			msg_desired_center.data = centerx.item(350)
