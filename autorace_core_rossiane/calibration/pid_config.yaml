@@ -1,6 +1,6 @@
 /drive/pid:
   ros__parameters:
     Kp: 0.6
-    Ki: 0.0
-    Kd: 0.0
-    desiredV: 0.12
+    Kv: 0.08
+    Kl: 5.0
+    desiredV: 0.25
