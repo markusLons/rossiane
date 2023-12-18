@@ -349,7 +349,7 @@ class DetectLane(Node):
 			if self.startTime == 0.0:
 				self.get_logger().info('Start in path_tracking')
 				self.startTime = time.time()
-			if time.time() - self.startTime > 34.0:
+			if time.time() - self.startTime > 30.0:
 				self.get_logger().info('Finish in path_tracking')
 				self.flags["parking"] = False
 				self.startTime = 0.0
@@ -384,7 +384,7 @@ class DetectLane(Node):
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 
 		elif self.flags["turn_right"] == True:
-			centerx = np.subtract(self.right_fitx, 250)
+			centerx = np.subtract(self.right_fitx, 245)
 			pts_center = np.array([np.transpose(np.vstack([centerx, ploty]))])
 			cv2.polylines(color_warp_lines, np.int_([pts_center]), isClosed=False, color=(0, 255, 255), thickness=15)
 		else:
@@ -395,8 +395,8 @@ class DetectLane(Node):
 		# Combine the result with the original image
 		#final = cv2.addWeighted(cv_image, 1, color_warp, 0.2, 0)
 		final = cv2.addWeighted(cv_image, 1, color_warp_lines, 1, 0)
-		cv2.imshow('camera', final)
-		cv2.waitKey(1)
+		# cv2.imshow('camera', final)
+		# cv2.waitKey(1)
 		if self.flags["green_light"] == True:
 			# publishes lane center
 			msg_desired_center = Float64()

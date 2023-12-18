@@ -15,7 +15,8 @@ setup(
              ['resource/' + package_name]),
      ('share/' + package_name, ['package.xml']),
      (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*.launch.py'))),
-     (os.path.join('share', package_name, 'calibration'), glob('calibration/*'))
+     (os.path.join('share', package_name, 'calibration'), glob('calibration/*')),
+     (os.path.join('share', package_name, 'map'), glob('map/*'))
    ],
     install_requires=['setuptools',
                       'ultralytics',],
