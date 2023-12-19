@@ -31,7 +31,7 @@ class PublisherSubscriber(Node):
 		self.commands_publisher = self.create_publisher(String, '/pid', 1)
 		self.parking_publisher = self.create_publisher(UInt16, '/parking', 1)
 		self.subscription = self.create_subscription(Image, '/color/image', self.callback, 1)
-		self.finish_publisher = self.create_publisher(String, 'robot_finish', 1)
+		self.finish_publisher = self.create_publisher(String, '/robot_finish', 1)
 		self.br = CvBridge()
 		self.msg = String()
 		self.left_or_right = UInt16()
@@ -175,7 +175,7 @@ class PublisherSubscriber(Node):
 		self.commands_publisher.publish(self.msg)
 		self.commands["tunnel"] = self.skip
 		self.commands["green_light"] = self.the_end
-		self.wigths["green_light"] = 100
+		self.wigths["green_light"] = 70
 
 	def the_end(self, *args):
 		self.msg.data = "rosiane"

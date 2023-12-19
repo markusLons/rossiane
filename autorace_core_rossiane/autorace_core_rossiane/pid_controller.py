@@ -127,18 +127,18 @@ class Controller(Node):
 			self.twist.linear.x = 0.21
 
 		if self.parking == True:
-			if time.time() - self.startTime > 22.0 + self.left_or_right/5:
+			if time.time() - self.startTime > 21.5 + self.left_or_right/5:
 				pass
-			elif time.time() - self.startTime > 16.9 + self.left_or_right/5:
+			elif time.time() - self.startTime > 16.4 + self.left_or_right/5:
 				self.twist.linear.x = 0.18
 				self.twist.angular.z = 0.0
-			elif time.time() - self.startTime > 13.5 + self.left_or_right/5:
+			elif time.time() - self.startTime > 13.0 + self.left_or_right/5:
 				self.twist.linear.x = -0.2
 				self.twist.angular.z = self.left_or_right * 0.79 + 0.04
-			elif time.time() - self.startTime > 11.5:
+			elif time.time() - self.startTime > 11.0:
 				self.twist.linear.x = 0.0
 				self.twist.angular.z = 0.0
-			elif time.time() - self.startTime > 7.5 + self.left_or_right/4:
+			elif time.time() - self.startTime > 7.0 + self.left_or_right/4:
 				self.twist.linear.x = 0.2
 				self.twist.angular.z = self.left_or_right * 0.7
 
