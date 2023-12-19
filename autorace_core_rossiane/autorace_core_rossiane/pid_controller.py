@@ -47,7 +47,7 @@ class Controller(Node):
 		self.parking = False
 		self.left_or_right = 0
 		self.startTime = 0.0
-		self.left = 0
+		self.temp = 0
 		self.subscription # prevent unused variable warn
 		self.commands_subscription
 
@@ -107,20 +107,20 @@ class Controller(Node):
 		self.twist.angular.z = float(w)
 
 		if self.commands == "obstacles":
-			if any(v < 0.26 for v in self.ranges[95:105]) and self.left == 0:
-				self.left = 1
-			if self.left == 1:
+			if any(v < 0.26 for v in self.ranges[95:105]) and self.temp == 0:
+				self.temp = 1
+			if self.temp == 1:
 				self.twist.angular.z = 1.0
 				if any(v < 0.4 for v in self.ranges[335:345]):
-						self.left = 2
-			if self.left == 2:
+						self.temp = 2
+			if self.temp == 2:
 				self.twist.angular.z = -1.0
 				if self.startTime == 0.0:
 					self.startTime = time.time()
 				if time.time() - self.startTime > 3.0:
-					if any(v < 0.4 for v in self.ranges[8:20]):
-						self.left = 3
-			if self.left == 3:
+					if any(v < 0.4 for v in self.ranges[5:20]):
+						self.temp = 3
+			if self.temp == 3:
 				self.twist.angular.z = 0.85
 				self.startTime = 0.0
 
@@ -134,7 +134,7 @@ class Controller(Node):
 				self.twist.angular.z = 0.0
 			elif time.time() - self.startTime > 13.5 + self.left_or_right/5:
 				self.twist.linear.x = -0.2
-				self.twist.angular.z = self.left_or_right * 0.80 + 0.04
+				self.twist.angular.z = self.left_or_right * 0.79 + 0.04
 			elif time.time() - self.startTime > 11.5:
 				self.twist.linear.x = 0.0
 				self.twist.angular.z = 0.0
